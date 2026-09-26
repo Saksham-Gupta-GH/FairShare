@@ -51,7 +51,7 @@ public class OpenRouterService {
         message.put("content", List.of(textContent, imageContent));
 
         Map<String, Object> requestBody = new HashMap<>();
-        requestBody.put("model", "meta-llama/llama-3.2-11b-vision-instruct");
+        requestBody.put("model", "google/gemini-1.5-flash");
         requestBody.put("messages", List.of(message));
 
         HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
