@@ -9,6 +9,8 @@
 [![Render](https://img.shields.io/badge/Backend-Render-46E3B7?style=flat&logo=render&logoColor=white)](https://render.com/)
 [![Vercel](https://img.shields.io/badge/Frontend-Vercel-000000?style=flat&logo=vercel&logoColor=white)](https://vercel.com/)
 
+**🔗 Live Demo: [fairshare-app-five.vercel.app](https://fairshare-app-five.vercel.app/)**
+
 ---
 
 ## ✨ Features
