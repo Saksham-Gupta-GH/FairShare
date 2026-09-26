@@ -1,6 +1,6 @@
 package com.saksham.splitr.controller;
 
-import com.saksham.splitr.service.OpenRouterService;
+import com.saksham.splitr.service.GeminiService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -12,11 +12,11 @@ import java.util.Map;
 @CrossOrigin(origins = "*")
 public class AiController {
 
-    private final OpenRouterService openRouterService;
+    private final GeminiService geminiService;
 
     @Autowired
-    public AiController(OpenRouterService openRouterService) {
-        this.openRouterService = openRouterService;
+    public AiController(GeminiService geminiService) {
+        this.geminiService = geminiService;
     }
 
     @PostMapping("/parse-receipt")
@@ -26,7 +26,7 @@ public class AiController {
             return ResponseEntity.badRequest().body(Map.of("error", "imageBase64 is required"));
         }
         
-        Map<String, Object> response = openRouterService.parseReceipt(imageBase64);
+        Map<String, Object> response = geminiService.parseReceipt(imageBase64);
         if (response.containsKey("error")) {
             return ResponseEntity.badRequest().body(response);
         }
