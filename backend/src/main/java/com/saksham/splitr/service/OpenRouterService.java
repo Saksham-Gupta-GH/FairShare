@@ -51,7 +51,7 @@ public class OpenRouterService {
         message.put("content", List.of(textContent, imageContent));
 
         Map<String, Object> requestBody = new HashMap<>();
-        requestBody.put("model", "google/gemini-flash-1.5");
+        requestBody.put("model", "openrouter/free");
         requestBody.put("messages", List.of(message));
 
         HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
