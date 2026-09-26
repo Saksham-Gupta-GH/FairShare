@@ -4,6 +4,12 @@ import './App.css'
 function App() {
   const [isBackendReady, setIsBackendReady] = useState(false);
   const [isSlowBoot, setIsSlowBoot] = useState(false);
+  
+  // AI Modal States
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isParsing, setIsParsing] = useState(false);
+  const [parsedData, setParsedData] = useState(null);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     // If it takes more than 3 seconds, show the subtext for slow cold boots
@@ -31,6 +37,38 @@ function App() {
 
     return () => clearTimeout(timer);
   }, [isBackendReady]);
+
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = async () => {
+      const base64Image = reader.result;
+      setIsParsing(true);
+      setError(null);
+      setParsedData(null);
+
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+        const response = await fetch(`${apiUrl}/api/ai/parse-receipt`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ imageBase64: base64Image })
+        });
+        
+        if (!response.ok) throw new Error('Failed to parse receipt');
+        
+        const data = await response.json();
+        setParsedData(data);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setIsParsing(false);
+      }
+    };
+  };
 
   if (!isBackendReady) {
     return (
@@ -82,10 +120,43 @@ function App() {
           </div>
 
           <div className="card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <button className="btn-primary">+ Add Expense</button>
+            <button className="btn-primary" onClick={() => setIsModalOpen(true)}>+ Add Expense</button>
           </div>
         </div>
       </main>
+
+      {isModalOpen && (
+        <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <h2>Add AI Expense</h2>
+            <p style={{marginBottom: '16px', color: 'var(--text-gray)'}}>Upload a receipt image to automatically extract items and prices.</p>
+            
+            <input 
+              type="file" 
+              accept="image/*" 
+              onChange={handleImageUpload} 
+              style={{marginBottom: '16px'}}
+            />
+
+            {isParsing && <div style={{color: 'var(--primary-color)'}}>Parsing receipt using AI...</div>}
+            {error && <div style={{color: 'red'}}>{error}</div>}
+            
+            {parsedData && (
+              <div className="parsed-result">
+                <h4 style={{marginBottom: '8px'}}>Extracted Items:</h4>
+                <pre style={{whiteSpace: 'pre-wrap', fontFamily: 'monospace'}}>
+                  {JSON.stringify(parsedData, null, 2)}
+                </pre>
+              </div>
+            )}
+
+            <div className="modal-actions" style={{marginTop: '24px'}}>
+              <button className="btn-secondary" onClick={() => { setIsModalOpen(false); setParsedData(null); }}>Cancel</button>
+              <button className="btn-primary" disabled={isParsing}>Confirm Split</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
