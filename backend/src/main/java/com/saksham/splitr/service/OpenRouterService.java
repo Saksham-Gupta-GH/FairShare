@@ -63,13 +63,23 @@ public class OpenRouterService {
                 if (!choices.isEmpty()) {
                     Map<String, Object> choice = choices.get(0);
                     Map<String, Object> messageResp = (Map<String, Object>) choice.get("message");
-                    return (String) messageResp.get("content");
+                    String content = (String) messageResp.get("content");
+                    
+                    // Strip markdown if the AI includes it by mistake
+                    if (content != null) {
+                        content = content.trim();
+                        if (content.startsWith("```json")) content = content.substring(7);
+                        else if (content.startsWith("```")) content = content.substring(3);
+                        if (content.endsWith("```")) content = content.substring(0, content.length() - 3);
+                        return content.trim();
+                    }
                 }
             }
             return "{\"error\": \"Failed to parse receipt.\"}";
         } catch (Exception e) {
             e.printStackTrace();
-            return "{\"error\": \"API error: " + e.getMessage() + "\"}";
+            String safeError = e.getMessage() != null ? e.getMessage().replace("\"", "'").replace("\n", " ") : "Unknown error";
+            return "{\"error\": \"API error: " + safeError + "\"}";
         }
     }
 }

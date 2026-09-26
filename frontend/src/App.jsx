@@ -58,9 +58,18 @@ function App() {
           body: JSON.stringify({ imageBase64: base64Image })
         });
         
-        if (!response.ok) throw new Error('Failed to parse receipt');
+        const text = await response.text();
+        let data;
+        try {
+          data = JSON.parse(text);
+        } catch (parseErr) {
+          throw new Error('Invalid JSON from server: ' + text.substring(0, 50));
+        }
+
+        if (!response.ok || data.error) {
+          throw new Error(data.error || 'Failed to parse receipt');
+        }
         
-        const data = await response.json();
         setParsedData(data);
       } catch (err) {
         setError(err.message);
