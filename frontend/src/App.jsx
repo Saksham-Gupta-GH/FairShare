@@ -70,7 +70,14 @@ function App() {
           throw new Error(data.error || 'Failed to parse receipt');
         }
         
-        setParsedData(data);
+        let parsedResult;
+        try {
+          parsedResult = JSON.parse(data.result);
+        } catch (e) {
+          throw new Error('AI returned malformed JSON: ' + data.result);
+        }
+        
+        setParsedData(parsedResult);
       } catch (err) {
         setError(err.message);
       } finally {

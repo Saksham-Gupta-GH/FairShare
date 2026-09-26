@@ -20,13 +20,16 @@ public class AiController {
     }
 
     @PostMapping("/parse-receipt")
-    public ResponseEntity<String> parseReceipt(@RequestBody Map<String, String> payload) {
+    public ResponseEntity<Map<String, Object>> parseReceipt(@RequestBody Map<String, String> payload) {
         String imageBase64 = payload.get("imageBase64");
         if (imageBase64 == null || imageBase64.isEmpty()) {
-            return ResponseEntity.badRequest().body("{\"error\": \"imageBase64 is required\"}");
+            return ResponseEntity.badRequest().body(Map.of("error", "imageBase64 is required"));
         }
         
-        String parsedJson = openRouterService.parseReceipt(imageBase64);
-        return ResponseEntity.ok(parsedJson);
+        Map<String, Object> response = openRouterService.parseReceipt(imageBase64);
+        if (response.containsKey("error")) {
+            return ResponseEntity.badRequest().body(response);
+        }
+        return ResponseEntity.ok(response);
     }
 }
