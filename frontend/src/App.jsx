@@ -3,99 +3,69 @@ import './App.css'
 
 function App() {
   const [isBackendReady, setIsBackendReady] = useState(false);
-  const [isSlowBoot, setIsSlowBoot] = useState(false);
   
-  // AI Modal States
+  // Manual Modal States
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isParsing, setIsParsing] = useState(false);
-  const [parsedData, setParsedData] = useState(null);
-  const [error, setError] = useState(null);
+  const [expenseTitle, setExpenseTitle] = useState('');
+  const [expenseAmount, setExpenseAmount] = useState('');
+  
+  // Dummy State to make the app feel alive for the demo
+  const [activities, setActivities] = useState([
+    { id: 1, title: 'Goa Trip 2026', desc: 'Flight tickets', icon: '✈️', amount: 4500, type: 'lent' },
+    { id: 2, title: 'Apartment Utilities', desc: 'Electricity and Wi-Fi', icon: '💡', amount: 1250, type: 'owes' },
+    { id: 3, title: 'Dinner at Dominos', desc: 'Pizza and garlic bread', icon: '🍕', amount: 500, type: 'lent' }
+  ]);
 
   useEffect(() => {
-    // If it takes more than 3 seconds, show the subtext for slow cold boots
-    const timer = setTimeout(() => {
-      if (!isBackendReady) setIsSlowBoot(true);
-    }, 3000);
-
-    // Ping the backend to wake it up / check health
-    const pingBackend = async () => {
+    // Health check ping to wake up Render instance
+    const checkHealth = async () => {
       try {
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
         const res = await fetch(`${apiUrl}/api/ping`);
         if (res.ok) {
           setIsBackendReady(true);
-          clearTimeout(timer);
         }
       } catch (err) {
-        // If it fails, retry in 5 seconds (Render cold start)
-        console.log("Backend waking up...", err);
-        setTimeout(pingBackend, 5000);
+        console.log("Backend booting...");
       }
     };
 
-    pingBackend();
+    checkHealth();
+    const interval = setInterval(() => {
+      if (!isBackendReady) checkHealth();
+    }, 2000);
 
-    return () => clearTimeout(timer);
+    return () => clearInterval(interval);
   }, [isBackendReady]);
 
-  const handleImageUpload = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = async () => {
-      const base64Image = reader.result;
-      setIsParsing(true);
-      setError(null);
-      setParsedData(null);
-
-      try {
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
-        const response = await fetch(`${apiUrl}/api/ai/parse-receipt`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ imageBase64: base64Image })
-        });
-        
-        const text = await response.text();
-        let data;
-        try {
-          data = JSON.parse(text);
-        } catch (parseErr) {
-          throw new Error('Invalid JSON from server: ' + text.substring(0, 50));
-        }
-
-        if (!response.ok || data.error) {
-          throw new Error(data.error || 'Failed to parse receipt');
-        }
-        
-        let parsedResult;
-        try {
-          parsedResult = JSON.parse(data.result);
-        } catch (e) {
-          throw new Error('AI returned malformed JSON: ' + data.result);
-        }
-        
-        setParsedData(parsedResult);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setIsParsing(false);
-      }
+  const handleAddExpense = (e) => {
+    e.preventDefault();
+    if (!expenseTitle || !expenseAmount) return;
+    
+    // Add to dummy list for demo purposes
+    const newActivity = {
+      id: Date.now(),
+      title: expenseTitle,
+      desc: 'Manually added expense',
+      icon: '🧾',
+      amount: parseInt(expenseAmount),
+      type: 'lent'
     };
+    
+    setActivities([newActivity, ...activities]);
+    setIsModalOpen(false);
+    setExpenseTitle('');
+    setExpenseAmount('');
   };
 
   if (!isBackendReady) {
     return (
       <div className="loading-screen">
         <div className="spinner"></div>
-        <div className="loading-text">Setting up your workspace...</div>
-        {isSlowBoot && (
-          <div className="loading-subtext">
-            Our secure environment is spinning up. This usually takes about 30 seconds on the first visit.
-          </div>
-        )}
+        <h2>Waking up server...</h2>
+        <p style={{ color: 'var(--text-muted)', marginTop: '8px' }}>
+          Free servers sleep after 15 minutes of inactivity.
+        </p>
       </div>
     );
   }
@@ -110,66 +80,99 @@ function App() {
           FairShare
         </div>
         <div className="nav-links">
-          <span>Dashboard</span>
+          <span className="active">Dashboard</span>
           <span>Groups</span>
           <span>Activity</span>
         </div>
       </nav>
 
       <main className="main-content">
-        <div className="hero">
-          <h1>Fair splits, zero friction.</h1>
-          <p>The modern way to share expenses with roommates, trips, and groups.</p>
+        <div className="page-header">
+          <h1>Welcome back, Saksham</h1>
+          <button className="btn-primary" onClick={() => setIsModalOpen(true)}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            Add an expense
+          </button>
         </div>
 
-        <div className="dashboard-grid">
-          <div className="card">
-            <div className="card-title">Goa Trip 2026</div>
-            <div className="card-amount">₹4,500</div>
-            <div className="card-subtitle">You owe Rahul</div>
+        <div className="summary-grid">
+          <div className="summary-card">
+            <h3>Total balance</h3>
+            <div className="amount positive">+ ₹3,750</div>
           </div>
-          
-          <div className="card">
-            <div className="card-title">Apartment Utilities</div>
-            <div className="card-amount">₹1,250</div>
-            <div className="card-subtitle">Ankit owes you</div>
+          <div className="summary-card">
+            <h3>You owe</h3>
+            <div className="amount negative">₹1,250</div>
           </div>
+          <div className="summary-card">
+            <h3>You are owed</h3>
+            <div className="amount positive">₹5,000</div>
+          </div>
+        </div>
 
-          <div className="card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <button className="btn-primary" onClick={() => setIsModalOpen(true)}>+ Add Expense</button>
-          </div>
+        <h2 className="section-title">Recent Activity</h2>
+        <div className="activity-list">
+          {activities.map((activity) => (
+            <div className="activity-item" key={activity.id}>
+              <div className="activity-details">
+                <div className="activity-icon">{activity.icon}</div>
+                <div className="activity-info">
+                  <h4>{activity.title}</h4>
+                  <p>{activity.desc}</p>
+                </div>
+              </div>
+              <div className="activity-balance">
+                <div className="cost" style={{ color: activity.type === 'owes' ? 'var(--primary-color)' : 'var(--success-color)' }}>
+                  {activity.type === 'owes' ? '-' : '+'} ₹{activity.amount}
+                </div>
+                <div className={`status ${activity.type}`}>
+                  {activity.type === 'owes' ? 'you owe' : 'you lent'}
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </main>
 
       {isModalOpen && (
         <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
-            <h2>Add AI Expense</h2>
-            <p style={{marginBottom: '16px', color: 'var(--text-gray)'}}>Upload a receipt image to automatically extract items and prices.</p>
-            
-            <input 
-              type="file" 
-              accept="image/*" 
-              onChange={handleImageUpload} 
-              style={{marginBottom: '16px'}}
-            />
-
-            {isParsing && <div style={{color: 'var(--primary-color)'}}>Parsing receipt using AI...</div>}
-            {error && <div style={{color: 'red'}}>{error}</div>}
-            
-            {parsedData && (
-              <div className="parsed-result">
-                <h4 style={{marginBottom: '8px'}}>Extracted Items:</h4>
-                <pre style={{whiteSpace: 'pre-wrap', fontFamily: 'monospace'}}>
-                  {JSON.stringify(parsedData, null, 2)}
-                </pre>
+            <h2>Add an expense</h2>
+            <form onSubmit={handleAddExpense}>
+              <div className="form-group">
+                <label>Description</label>
+                <input 
+                  type="text" 
+                  placeholder="Enter a description"
+                  value={expenseTitle}
+                  onChange={(e) => setExpenseTitle(e.target.value)}
+                  autoFocus
+                />
               </div>
-            )}
+              
+              <div className="form-group">
+                <label>Amount (₹)</label>
+                <input 
+                  type="number" 
+                  placeholder="0.00"
+                  value={expenseAmount}
+                  onChange={(e) => setExpenseAmount(e.target.value)}
+                />
+              </div>
 
-            <div className="modal-actions" style={{marginTop: '24px'}}>
-              <button className="btn-secondary" onClick={() => { setIsModalOpen(false); setParsedData(null); }}>Cancel</button>
-              <button className="btn-primary" disabled={isParsing}>Confirm Split</button>
-            </div>
+              <div className="form-group">
+                <label>Paid by</label>
+                <select>
+                  <option>You (and split equally)</option>
+                  <option>Someone else (and split equally)</option>
+                </select>
+              </div>
+
+              <div className="modal-actions">
+                <button type="button" className="btn-secondary" onClick={() => setIsModalOpen(false)}>Cancel</button>
+                <button type="submit" className="btn-primary">Save Expense</button>
+              </div>
+            </form>
           </div>
         </div>
       )}
